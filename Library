@@ -1,0 +1,60 @@
+class Book:
+    def __init__(self, title, author, isbn, available_copies):
+        self.title = title
+        self.author = author
+        self.isbn = isbn
+        self.available_copies = available_copies
+      
+    def borrow(self):
+        if self.available_copies > 0:
+            self.available_copies -= 1
+            return f"You have successfully borrowed {self.title}. Have fun!"
+        else:
+            return f"Book {self.title} is not available. We're sorry and recommend to try another title."
+          
+    def return_book(self):
+        self.available_copies += 1
+        return f"Thank you for returning {self.title}!"
+        
+    def get_book_info(self):
+        return f"Title: {self.title}, Author: {self.author}, ISBN: {self.isbn}, Available copies: {self.available_copies}"
+        
+class Library:
+    def __init__(self):
+        self.books = []
+      
+    def add_book(self, book):
+        self.books.append(book)
+
+    def list_available_books(self):
+        for book in self.books:
+            if book.available_copies > 0:
+                print(book.get_book_info())
+
+    def search_book(self, title):
+        for book in self.books:
+            if book.title.lower() == title.lower():
+                return book
+        return None
+              
+# Creating books
+book1 = Book("Harry Potter", "J.K. Rowling", "1234567890", 3)
+book2 = Book("Lord Of The Rings", "Tolkien", "3145526731", 2)
+
+# Creating library
+library = Library()
+
+# Adding books to the library
+library.add_book(book1)
+library.add_book(book2)
+
+# List of available books
+library.list_available_books()
+
+# Searching book by title
+searched_book = library.search_book("Harry Potter")
+if searched_book:
+    print(searched_book.get_book_info())
+    print(searched_book.borrow())  # Borrowing book
+else:
+    print("Book not found")
