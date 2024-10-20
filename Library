@@ -1,3 +1,5 @@
+from rapidfuzz import process
+
 class Book:
     def __init__(self, title, author, isbn, available_copies):
         self.title = title
@@ -31,12 +33,28 @@ class Library:
             if book.available_copies > 0:
                 print(book.get_book_info())
 
-    def search_book(self, title):
-        for book in self.books:
-            if book.title.lower() == title.lower():
-                return book
+    def search_books_by_title(self, title):
+        book_titles = [book.title for book in self.books]
+        best_fit = process.extractOne(title, book_titles)
+
+        if best_fit and best_fit[1] > 70:
+            matching_title = best_fit[0]
+            for book in self.books:
+                if book.title == matching_title:
+                    return book
         return None
-              
+          
+    def search_books_by_author(self, author):
+        book_author = [book.author for book in self.books]
+        best_fit = process.extractOne(author, book_author)
+
+        if best_fit and best_fit[1] > 70:
+            matching_author = best_fit[0]
+            for book in self.books:
+                if book.author == matching_author:
+                    return book
+        return None
+
 # Creating books
 book1 = Book("Harry Potter", "J.K. Rowling", "1234567890", 3)
 book2 = Book("Lord Of The Rings", "Tolkien", "3145526731", 2)
@@ -52,9 +70,17 @@ library.add_book(book2)
 library.list_available_books()
 
 # Searching book by title
-searched_book = library.search_book("Harry Potter")
-if searched_book:
-    print(searched_book.get_book_info())
-    print(searched_book.borrow())  # Borrowing book
+search_books_by_title = library.search_books_by_title("Harry Potter")
+if search_books_by_title:
+    print(search_books_by_title.get_book_info())
+    print(search_books_by_title.borrow())  # Borrowing book
+else:
+    print("Book not found")
+
+# Searching book by author
+search_books_by_author = library.search_books_by_author("Tolkien")
+if search_books_by_author:
+    print(search_books_by_author.get_book_info())
+    print(search_books_by_author.borrow()) # Borrowing book
 else:
     print("Book not found")
