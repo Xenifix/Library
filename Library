@@ -6,17 +6,6 @@ class Book:
         self.author = author
         self.isbn = isbn
         self.available_copies = available_copies
-      
-    def borrow(self):
-        if self.available_copies > 0:
-            self.available_copies -= 1
-            return f"You have successfully borrowed {self.title}. Have fun!"
-        else:
-            return f"Book {self.title} is not available. We're sorry and recommend to try another title."
-          
-    def return_book(self):
-        self.available_copies += 1
-        return f"Thank you for returning {self.title}!"
         
     def get_book_info(self):
         return f"Title: {self.title}, Author: {self.author}, ISBN: {self.isbn}, Available copies: {self.available_copies}"
@@ -24,7 +13,36 @@ class Book:
 class Library:
     def __init__(self):
         self.books = []
-      
+    
+    def borrow_book(self, user, book):
+        if user.membership_type == 'outsider':
+            print("Sorry, you're not a library member.")
+            return
+
+        if user.membership_type == 'silver' and user.borrowed_books_count >= 1:
+            print("Sorry, you already borrowed one book.")
+            return
+
+        if user.membership_type == 'gold' and user.borrowed_books_count >= 3:
+            print("Sorry, you already borrowed 3 books.")
+            return
+        
+        if book.available_copies <= 0:
+            print(f"Sorry, '{book.title}' is currently not available to borrow.")
+            return
+
+        book.available_copies -= 1
+        user.borrowed_books_count += 1
+        print(f"Book '{book.title}' has been borrowed by {user.membership_type} member. Enjoy!")
+
+    def return_book(self, user, book):
+        if user.borrowed_books_count > 0:
+            user.borrowed_books_count -= 1
+            book.available_copies += 1
+            print(f"Thank you for returning '{book.title}'! ")
+        else:
+            print("Error: User has no borrowed books to return.")
+
     def add_book(self, book):
         self.books.append(book)
 
@@ -45,8 +63,8 @@ class Library:
         return None
           
     def search_books_by_author(self, author):
-        book_author = [book.author for book in self.books]
-        best_fit = process.extractOne(author, book_author)
+        book_authors = [book.author for book in self.books]
+        best_fit = process.extractOne(author, book_authors)
 
         if best_fit and best_fit[1] > 70:
             matching_author = best_fit[0]
@@ -54,6 +72,14 @@ class Library:
                 if book.author == matching_author:
                     return book
         return None
+
+class User:
+    def __init__(self, membership):
+        allowed_memberships = ['gold', 'silver', 'outsider']
+        if membership not in allowed_memberships:
+            raise ValueError(f"Invalid membership type: {membership}. Allowed types: {allowed_memberships}")
+        self.borrowed_books_count = 0
+        self.membership_type = membership
 
 # Creating books
 book1 = Book("Harry Potter", "J.K. Rowling", "1234567890", 3)
@@ -66,21 +92,37 @@ library = Library()
 library.add_book(book1)
 library.add_book(book2)
 
+# Creating users
+user1 = User("gold")
+user2 = User("silver")
+
 # List of available books
+print("List of available books:")
 library.list_available_books()
+print()
 
-# Searching book by title
-search_books_by_title = library.search_books_by_title("Harry Potter")
-if search_books_by_title:
-    print(search_books_by_title.get_book_info())
-    print(search_books_by_title.borrow())  # Borrowing book
+# Borrowing book by title search
+book_to_borrow = library.search_books_by_title("Harry Potter")
+if book_to_borrow:
+    library.borrow_book(user1, book_to_borrow)  # Borrowing book
 else:
-    print("Book not found")
+    print("Book not found.")
 
-# Searching book by author
-search_books_by_author = library.search_books_by_author("Tolkien")
-if search_books_by_author:
-    print(search_books_by_author.get_book_info())
-    print(search_books_by_author.borrow()) # Borrowing book
+# Borrowing book by author search
+book_to_borrow = library.search_books_by_author("Tolkien")
+if book_to_borrow:
+    library.borrow_book(user2, book_to_borrow)  # Borrowing book
 else:
-    print("Book not found")
+    print("Book not found.")
+
+# Listing available books after borrowing
+print("\nList of available books after borrowing:")
+library.list_available_books()
+print()
+
+# Returning book
+library.return_book(user1, book1)
+
+# Listing available books after returning
+print("\nList of available books after returning:")
+library.list_available_books()
