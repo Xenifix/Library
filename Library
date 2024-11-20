@@ -1,6 +1,19 @@
 from rapidfuzz import process
+from abc import ABC, abstractmethod
+from datetime import datetime
 
-class Book:
+
+class AbstractBook(ABC):
+  @abstractmethod
+  def get_book_type(self):
+    pass
+
+  @abstractmethod
+  def get_book_info(self):
+    pass
+
+    
+class Book(AbstractBook):
     def __init__(self, title, author, isbn, available_copies):
         self.title = title
         self.author = author
@@ -10,11 +23,56 @@ class Book:
     def get_book_info(self):
         return f"Title: {self.title}, Author: {self.author}, ISBN: {self.isbn}, Available copies: {self.available_copies}"
         
+    @abstractmethod
+    def get_book_type(self):
+        pass
+        
+        
+class PaperBook(Book):
+    def __init__(self, title, author, available_copies):
+        super().__init__(title, author, None, available_copies)
+        
+    def borrow_book(self):
+        if self.available_copies > 0:
+            self.available_copies -= 1
+            return f"You have successfully borrowed '{self.title}'."
+        else:
+            return f"No available copies to borrow. Sorry"
+            
+    def get_book_type(self):
+        return "PaperBook"
+        
+class EBook(Book):
+    def __init__(self, title, author):
+        super().__init__(title, author, None, None)
+        self.sent_mails = {}
+    
+    def get_book_type(self):
+        return "EBook"
+    
+    def send_by_email(self, email):
+        if not email:
+            return f"You provided wrong email address. Please try again"
+            
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        if email not in self.sent_mails:
+            self.sent_mails[email] = []
+            
+        self.sent_mails[email].append(current_time)
+        
+        return f"EBook '{self.title}' has been successfully sent to {email} on {current_time}."
+        
+        
+        
 class Library:
     def __init__(self):
         self.books = []
     
     def borrow_book(self, user, book):
+        if book.get_book_type() == "EBook":
+            print("You can't borrow an EBook. Please provide an email to receive it instead.")
+            return
         if user.membership_type == 'outsider':
             print("Sorry, you're not a library member.")
             return
@@ -30,11 +88,20 @@ class Library:
         if book.available_copies <= 0:
             print(f"Sorry, '{book.title}' is currently not available to borrow.")
             return
-
+          
         book.available_copies -= 1
         user.borrowed_books_count += 1
         print(f"Book '{book.title}' has been borrowed by {user.membership_type} member. Enjoy!")
-
+    
+    def send_ebook(self, book, email):
+        if book.get_book_type() == "EBook":
+            response = book.send_by_email(email)
+            print(response)
+        else:
+            print("We can't send paper books via email. Please pick an eBook instead.")
+        
+        
+        
     def return_book(self, user, book):
         if user.borrowed_books_count > 0:
             user.borrowed_books_count -= 1
@@ -48,7 +115,7 @@ class Library:
 
     def list_available_books(self):
         for book in self.books:
-            if book.available_copies > 0:
+            if book.available_copies is None or book.available_copies > 0:
                 print(book.get_book_info())
 
     def search_books_by_title(self, title):
@@ -82,8 +149,8 @@ class User:
         self.membership_type = membership
 
 # Creating books
-book1 = Book("Harry Potter", "J.K. Rowling", "1234567890", 3)
-book2 = Book("Lord Of The Rings", "Tolkien", "3145526731", 2)
+book1 = PaperBook("Harry Potter", "J.K. Rowling", 3)
+book2 = PaperBook("Lord Of The Rings", "Tolkien", 2)
 
 # Creating library
 library = Library()
@@ -95,6 +162,10 @@ library.add_book(book2)
 # Creating users
 user1 = User("gold")
 user2 = User("silver")
+user3 = User("outsider")
+
+#Can outsider borrow book
+library.borrow_book(user3, book1)
 
 # List of available books
 print("List of available books:")
@@ -125,4 +196,34 @@ library.return_book(user1, book1)
 
 # Listing available books after returning
 print("\nList of available books after returning:")
+library.list_available_books()
+
+# Adding an eBook to the library
+ebook1 = EBook("Digital Fortress", "Dan Brown")
+library.add_book(ebook1)
+
+# Testing eBook sending by email
+print("\nSending eBook by email:")
+library.send_ebook(ebook1, "user@example.com")
+
+# Attempt to borrow an eBook
+print("\nAttempting to borrow an eBook:")
+library.borrow_book(user1, ebook1)
+
+# Testing borrowing limit for silver user
+print("\nTesting borrowing limit for silver user:")
+library.borrow_book(user2, book1)  # Should succeed
+library.borrow_book(user2, book2)  # Should display an error message (limit exceeded)
+
+# Testing sending eBook with incorrect email
+print("\nSending eBook with incorrect email:")
+library.send_ebook(ebook1, "")
+
+# Testing return of a book that wasn't borrowed
+print("\nReturning a book that wasn't borrowed:")
+user3 = User("gold")
+library.return_book(user3, book1)
+
+# Final list of available books
+print("\nFinal list of available books:")
 library.list_available_books()
